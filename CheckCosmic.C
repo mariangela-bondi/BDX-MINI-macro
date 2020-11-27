@@ -35,33 +35,17 @@ int main(){
     ifstream fbad(Form("/Users/Mariangela/work/BDX-MINI/cosmicCheck/%i.badEvents.dat",runs[ii])); // legge il file con la lista degli event NUmber degli eventi di rumore: bisogna cambiare percorso
 
         CheckCosmic_selector *mySelector = new CheckCosmic_selector();
+
         
-        
-        /* riempio gli elemnti del vettore vec_badEvents con gli eventNumber degli eventi cattivi*/
-        vector<int> vec_badEvents;
-        int n1, n2;
-        if(!fbad) { // file couldn't be opened
-           cerr << "Error: file could not be opened" << endl;
-           exit(1);
-        }
-        while ( !fbad.eof() ) { // keep reading until end-of-file
-        fbad>>n1>>n2;
-            vec_badEvents.push_back(n2);
-      //      cout << n1<< " "<<n2<<endl;
-        }
-        
-        /*  Selector per contare gli eventi buoni con Etot >50 */
-        /* Controllo che ogni evento Etot>50 non sia un bad event: controllo che il suo event Number non sia un elemento del vettore badEvents*/
-  
-        mySelector->badevents =vec_badEvents;
         t->Process(mySelector);
         // numero di eventi buoni
-        int good_events = mySelector->good_events;
-        cout << "GOOD events "<< good_events<<endl;
+    //    int good_events = mySelector->good_events;
+        int N=mySelector->good_events;
+        
+        cout << "GOOD events "<< N<<endl;
 
       double Toff=h->GetBinContent(5);
       double Ton=h->GetBinContent(3);
-      int N=t->GetEntries("(Etot>50)");    // conto tutti gli eventi con Etot > 50 ma senza verificare se tra di essi ci sono badEvents (eventi di rumore)
 
         
       g->SetPoint(ii,ii,N/Toff);
