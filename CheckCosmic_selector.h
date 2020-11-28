@@ -15,6 +15,12 @@
 #include <TTreeReader.h>
 #include <TTreeReaderValue.h>
 #include <TTreeReaderArray.h>
+
+#include <TH1.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
+
 using namespace std;
 // Headers needed by this particular selector
 
@@ -38,7 +44,9 @@ public :
    CheckCosmic_selector(TTree * /*tree*/ =0) {
        
        good_events=0;
-       
+       events=0; 
+       bad_event_n=0; 
+   
    }
    virtual ~CheckCosmic_selector() { }
    virtual Int_t   Version() const { return 2; }
@@ -55,9 +63,12 @@ public :
    virtual void    SlaveTerminate();
    virtual void    Terminate();
 
-      
-    vector<int> badevents;
-    int good_events;
+   int events;
+   int good_events;
+   int bad_event_n=0; //variable used to count bad events
+   vector<int> bad_events;
+   string file_name;
+   string run_num;
     
    ClassDef(CheckCosmic_selector,0);
 

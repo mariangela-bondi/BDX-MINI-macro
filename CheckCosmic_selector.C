@@ -29,6 +29,11 @@
 #include <TH2.h>
 #include <TStyle.h>
 
+#include <TH1.h>
+#include <iostream>
+#include <fstream>
+#include <vector>
+
 void CheckCosmic_selector::Begin(TTree * /*tree*/)
 {
    // The Begin() function is called at the start of the query.
@@ -43,6 +48,9 @@ void CheckCosmic_selector::SlaveBegin(TTree * /*tree*/)
    // The SlaveBegin() function is called after the Begin() function.
    // When running with PROOF SlaveBegin() is called on each slave server.
    // The tree argument is deprecated (on PROOF 0 is passed).
+  events=0;
+  good_events=0;
+  bad_event_n=0;
 
    TString option = GetOption();
 
@@ -65,14 +73,39 @@ Bool_t CheckCosmic_selector::Process(Long64_t entry)
    // Use fStatus to set the return value of TTree::Process().
    //
    // The return value is currently not used.
-
-    
-   fReader.SetLocalEntry(entry);
-
-    good_events =100;
-//    cout << badevents.size()<<endl;
-    
-   return kTRUE;
+  
+  
+  fReader.SetLocalEntry(entry);
+  
+  //read the badevents file
+  if(entry==0){
+    run_num = std::to_string(*RunN);
+    file_name = run_num+".badEvents.dat";
+    ifstream ifile;
+    ifile.open(file_name.c_str());
+    int tmp;
+    int i=0;
+    while(ifile>>tmp){
+      ifile>>tmp;
+      bad_events.push_back(tmp);
+      i++;
+      
+    }
+    bad_events.push_back(1000000000);
+  }
+  //counts events over treshold
+  
+  if(*Etot>50){
+    events++;
+    good_events++;
+    if(*EventN==bad_events[bad_event_n]){
+      good_events-=1;
+//std::cout<<"Evento cattivo numero: " << bad_event_n << " con energia: " <<*Etot<<std::endl;
+      bad_event_n++;
+    }
+  }
+  
+  return kTRUE;
 }
 
 void CheckCosmic_selector::SlaveTerminate()
@@ -85,8 +118,8 @@ void CheckCosmic_selector::SlaveTerminate()
 
 void CheckCosmic_selector::Terminate()
 {
-   // The Terminate() function is the last function to be called during
+  // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present
    // the results graphically or save the results to file.
-
+  
 }
