@@ -26,7 +26,7 @@ int main(){
    
     TGraphErrors *g=new TGraphErrors();
     TGraphErrors *g_tot=new TGraphErrors();
-    TCanvas *c=new TCanvas("out", "", 10, 10, 800, 400);
+    TCanvas *c=new TCanvas("out", "", 10, 10, 800, 500);
 
   for (int ii=0;ii<39;ii++){
     //for (int ii=0;ii<2;ii++){
@@ -68,13 +68,21 @@ int main(){
 
   c->Divide(2,1);
   // plot graphs
+ 
   
+  TF1 f_good("f_good", "[0]");
+  TF1 f_tot("f_tot", "[0]");
+  g_tot->Fit("f_tot");
+  g->Fit("f_good");
   c->cd(1);
   g_tot->Draw("AP");
 
   c->cd(2);
-  g->Draw("AP");    // save graphs in a root file
+  g->Draw("AP");    
+  
+  gStyle->SetOptFit();
   c->Print();
  
-    
+  // save graphs in a root file
+  
 } //end main()
