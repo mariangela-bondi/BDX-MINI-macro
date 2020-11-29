@@ -95,24 +95,27 @@ Bool_t CheckCosmic_selector::Process(Long64_t entry)
   }
   //counts events over treshold
   
-  if(*Etot>50){
-    events++;
-    good_events++;
-    if(*EventN==bad_events[bad_event_n]){
-      good_events-=1;
-//std::cout<<"Evento cattivo numero: " << bad_event_n << " con energia: " <<*Etot<<std::endl;
-      bad_event_n++;
+  double E_ref=50;
+  if(*Etot>E_ref){
+    events++; //counting events 
+    if(*EventN!=bad_events[bad_event_n]){
+      good_events++;
     }
   }
   
-  return kTRUE;
+  if(*EventN==bad_events[bad_event_n]){
+    bad_event_n++;
+  }
+
+
+return kTRUE;
 }
 
 void CheckCosmic_selector::SlaveTerminate()
 {
-   // The SlaveTerminate() function is called after all entries or objects
-   // have been processed. When running with PROOF SlaveTerminate() is called
-   // on each slave server.
+  // The SlaveTerminate() function is called after all entries or objects
+  // have been processed. When running with PROOF SlaveTerminate() is called
+  // on each slave server.
 
 }
 
