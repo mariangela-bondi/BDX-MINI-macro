@@ -40,6 +40,18 @@ void CheckCosmic_selector::Begin(TTree * /*tree*/)
    // When running with PROOF Begin() is only called on the client.
    // The tree argument is deprecated (on PROOF 0 is passed).
 
+  fReader.SetLocalEntry(0);
+  string file_name = std::to_string(*RunN)+".badEvents.dat";
+  ifstream ifile;
+  ifile.open(file_name.c_str());
+  int tmp;
+  while(ifile>>tmp){
+    ifile>>tmp;
+    bad_events.push_back(tmp);
+  }
+  ifile.close();
+  bad_events.push_back(1000000000); //add a fake last entry
+
    TString option = GetOption();
 }
 
@@ -50,10 +62,10 @@ void CheckCosmic_selector::SlaveBegin(TTree * /*tree*/)
    // The tree argument is deprecated (on PROOF 0 is passed).
   events=0;
   good_events=0;
-  bad_event_n=0;
-
-   TString option = GetOption();
-
+  
+  
+  TString option = GetOption();
+  
 }
 
 Bool_t CheckCosmic_selector::Process(Long64_t entry)
@@ -77,34 +89,16 @@ Bool_t CheckCosmic_selector::Process(Long64_t entry)
   
   fReader.SetLocalEntry(entry);
   
-  //read the badevents file
-  if(entry==0){
-    run_num = std::to_string(*RunN);
-    file_name = run_num+".badEvents.dat";
-    ifstream ifile;
-    ifile.open(file_name.c_str());
-    int tmp;
-    int i=0;
-    while(ifile>>tmp){
-      ifile>>tmp;
-      bad_events.push_back(tmp);
-      i++;
-      
-    }
-    bad_events.push_back(1000000000);
-  }
-  //counts events over treshold
+  
   
   double E_ref=50;
   if(*Etot>E_ref){
     events++; //counting events 
-    if(*EventN!=bad_events[bad_event_n]){
+    std::vector<int>::iterator it; 
+    it = find (bad_events.begin(), bad_events.end(), *EventN); 
+    if (it == bad_events.end()) {
       good_events++;
     }
-  }
-  
-  if(*EventN==bad_events[bad_event_n]){
-    bad_event_n++;
   }
 
 
@@ -124,5 +118,4 @@ void CheckCosmic_selector::Terminate()
   // The Terminate() function is the last function to be called during
    // a query. It always runs on the client, it can be used to present
    // the results graphically or save the results to file.
-  
 }

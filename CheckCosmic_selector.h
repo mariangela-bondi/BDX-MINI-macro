@@ -45,7 +45,6 @@ public :
        
        good_events=0;
        events=0; 
-       bad_event_n=0; 
    
    }
    virtual ~CheckCosmic_selector() { }
@@ -65,10 +64,7 @@ public :
 
    int events;
    int good_events;
-   int bad_event_n=0; //variable used to count bad events
    vector<int> bad_events;
-   string file_name;
-   string run_num;
     
    ClassDef(CheckCosmic_selector,0);
 
