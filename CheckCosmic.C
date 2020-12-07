@@ -26,32 +26,42 @@ int main(){
    
     TGraphErrors *g=new TGraphErrors();
     TGraphErrors *g_tot=new TGraphErrors();
-    TCanvas *c=new TCanvas("out", "", 10, 10, 800, 500);
+    TCanvas *c=new TCanvas("out", "", 10, 10, 800, 400);
 
-  for (int ii=0;ii<39;ii++){
-    //for (int ii=0;ii<2;ii++){
-        cout << "********* Run  "<<runs[ii]<<" ************"<<endl;
-        /* Leggo i Files necessari per l'analisi*/
+    for (int ii=0;ii<39;ii++){
+      //for (int ii=0;ii<2;ii++){
+      cout << "********* Run  "<<runs[ii]<<" ************"<<endl;
+      /* Leggo i Files necessari per l'analisi*/
       TFile *f=new TFile(Form("/home/msprea/Scrivania/Tesi/Stabilità/%i.outDST.root",runs[ii]));  // legge il file root : bisogna cambiare percorso
-        TH1D *h=(TH1D*)f->Get("hControl");
-        TTree *t=(TTree*)f->Get("tOut");
-    ifstream fbad(Form("//home/msprea/Scrivania/Tesi/Stabilità/%i.badEvents.dat",runs[ii])); // legge il file con la lista degli event NUmber degli eventi di rumore: bisogna cambiare percorso
+      TH1D *h=(TH1D*)f->Get("hControl");
+      TTree *t=(TTree*)f->Get("tOut");
+      ifstream fbad(Form("//home/msprea/Scrivania/Tesi/Stabilità/%i.badEvents.dat",runs[ii])); // legge il file con la lista degli event NUmber degli eventi di rumore: bisogna cambiare percorso
+      
+      CheckCosmic_selector *mySelector = new CheckCosmic_selector();
+      
+      
+      int tmp;
+      vector<int> bad_events;
+      while(fbad>>tmp){
+	fbad>>tmp;
+	bad_events.push_back(tmp);
+      }
+      fbad.close();
+      bad_events.push_back(1000000000); //add a fake last entry
+      mySelector->bad_events=bad_events;
 
-        CheckCosmic_selector *mySelector = new CheckCosmic_selector();
-
-        
-        t->Process(mySelector);
-        // numero di eventi buoni
-    //    int good_events = mySelector->good_events;
+      t->Process(mySelector);
+      // numero di eventi buoni
+      //    int good_events = mySelector->good_events;
         int N=mySelector->good_events;
 	int M=mySelector->events;
         
         cout << "GOOD events "<< N <<endl;
 	cout << "TOTAL events " <<M << endl;
-
-      double Toff=h->GetBinContent(5);
-      double Ton=h->GetBinContent(3);
-
+	
+	double Toff=h->GetBinContent(5);
+	double Ton=h->GetBinContent(3);
+	
         
       g->SetPoint(ii,ii,N/Toff);
       cout << "punto:" << g->GetPointY(ii) << endl;
@@ -79,9 +89,9 @@ int main(){
 
   c->cd(2);
   g->Draw("AP");    
-  
+
   gStyle->SetOptFit();
-  c->Print();
+  c->Print("out.pdf","pdf");
  
   // save graphs in a root file
   
