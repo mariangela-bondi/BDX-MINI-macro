@@ -45,7 +45,8 @@ public :
        
        good_events=0;
        events=0; 
-   
+       good_events_time_limited=0;
+       
    }
    virtual ~CheckCosmic_selector() { }
    virtual Int_t   Version() const { return 2; }
@@ -64,6 +65,8 @@ public :
 
    int events;
    int good_events;
+   int end; //last event to count for time-limited background rate estimate
+   int good_events_time_limited;
    vector<int> bad_events;
     
    ClassDef(CheckCosmic_selector,0);

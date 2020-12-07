@@ -53,7 +53,8 @@ void CheckCosmic_selector::SlaveBegin(TTree * /*tree*/)
   // The tree argument is deprecated (on PROOF 0 is passed).
   events=0;
   good_events=0;
-    
+  good_events_time_limited=0;
+
   TString option = GetOption();
   
 }
@@ -99,7 +100,11 @@ Bool_t CheckCosmic_selector::Process(Long64_t entry)
     it = find (bad_events.begin(), bad_events.end(), *EventN); 
     if (it == bad_events.end()) {
       good_events++;
+      if(*EventTime < end){
+	good_events_time_limited++; //counting events before end time
+      }
     }
+    
   }
 
 return kTRUE;
