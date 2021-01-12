@@ -30,11 +30,14 @@ int main(){
   //int runs[2] = {1324, 1325};
   ifstream inFile;
   ifstream inFile_badEvents;
-  
+
+  TH1D *x_corr_tot_good  = new TH1D("x_corr_tot_good", "x_corr_tot_good; test; test", 50, -1000, 12000);
+  TH1D *x_corr_tot_bad  = new TH1D("x_corr_tot_bad", "x_corr_tot_bad; test; test", 50, -1000, 12000);
+ 
   for(int i=0; i<4; i++){
     for(int j=0; j<16; j++){
-      hGOOD[i][j] = new TH1D(Form("hGOOD_%i_%i", i, j), Form("hGOOD_%i_%i; test; test", i, j), 50, -50000, 50000);
-      hBAD[i][j] = new TH1D(Form("hBAD_%i_%i", i, j), Form("hBAD_%i_%i; test; test", i, j), 50, -50000, 50000);
+      hGOOD[i][j] = new TH1D(Form("hGOOD_%i_%i", i, j), Form("hGOOD_%i_%i; test; test", i, j), 50, -250, 250);
+      hBAD[i][j] = new TH1D(Form("hBAD_%i_%i", i, j), Form("hBAD_%i_%i; test; test", i, j), 50, -250, 250);
     }
   }
   
@@ -104,10 +107,11 @@ int main(){
     */
     
     //definisco la funzione
-    TF1 f("f", "[0]*cos([1]*(x-[2]))");
+    TF1 f("f", "-[0]*cos([1]*(x-[2]))+[3]");
     
     //lavoro canale per canale, evento per evento
     for(int e=0; e<events.size(); e++){
+      double xcorr_tot=0;
       for(int i=0; i<4; i++){
 	for(int j=0; j<16; j++){
 	  
@@ -119,36 +123,51 @@ int main(){
 	  vector<double> data = test->ampl[i][j]; 
 	  
 	  //trovo parametri del seno
-	  double t_max=0, f_max=data[0], f_min=data[0];
+	  double t_min=0, f_max=data[0], f_min=data[0];
 	  for(int k=0; k<data.size(); k++){
 	    if(data[k]>f_max){
 		   f_max=data[k];
-		   t_max=k;
 		 }
 	    if(data[k]<f_min){
 	      f_min=data[k];
+	      t_min=k;
 	    }
 	  }
 	  
 	  //trovo tempo massimo 
-	  t_max=t_max*dT[i];
-	  //trovo ampiezza oscillazione 
-	  //DA VERIFICARE
+	  t_min=t_min*dT[i];
+	  //trovo ampiezza oscillazione
 	  double mid=(f_max+f_min)/2;
 	  f_max=f_max-mid;
 	  
 	  double T= 380; // time in ns
-	  f.SetParameter(0, f_max);
-	  f.SetParameter(1, 2*TMath::Pi()/T);
-	  f.SetParameter(2, t_max);
-	       
+	  //f.FixParameter(0, f_max);
+	  f.FixParameter(0, 1);
+	  //rinormalizzo i dati rispetto all'ampiezza 
+	  for(int k=0; k<data.size(); k++){
+	    data[k]=data[k]/f_max;
+	  }
+
+	  f.FixParameter(1, 2*TMath::Pi()/T);
+	  f.FixParameter(2, t_min);
+	  f.FixParameter(3, 0);
+
 	  //calcolo della correlazione
 	  double y=0;
 	  double crosscorrelation=0;
-	  for(int k=0; k<data.size(); k++){
+	  int deltaT=380/dT[i];
+	  //calcolo della crosscorrelazione su un periodo 
+	  for(int k=0; k<deltaT; k++){
 	    crosscorrelation=crosscorrelation+data[k]*f.Eval(k*dT[i])*dT[i];
 	  }
+	  /* calcolo della crosscorrelazione su tutti i dati*/
+	  /*for(int k=0; k<data.size(); k++){
+	    crosscorrelation=crosscorrelation+data[k]*f.Eval(k*dT[i])*dT[i];
+	  }*/
 	  
+	  xcorr_tot+=crosscorrelation;
+
+	  //verifico se l'evento è buono o cattivo
 	  vector<int>::iterator it; 
 	  it = find (badEventsNumber.begin(), badEventsNumber.end(), test->eventN); 
 	  if (it == badEventsNumber.end()) {
@@ -157,43 +176,49 @@ int main(){
 	    hBAD[i][j]->Fill(crosscorrelation);
 	  }
 	}
-      }   
+      }  
+      Event* test = events[e];
+      vector<int>::iterator it; 
+	  it = find (badEventsNumber.begin(), badEventsNumber.end(), test->eventN); 
+      if (it == badEventsNumber.end()) {
+	    x_corr_tot_good->Fill(xcorr_tot);
+	  }else{
+	    x_corr_tot_bad->Fill(xcorr_tot);
+	  }
     }
     
     inFile.close();
     inFile_badEvents.close();
   } //end for on runNumber
   
-    /*TCanvas *good=new TCanvas("good", "", 10, 10, 1600, 1600);
-      good->Divide(8,8);
-      for(int j=0; j<16; j++){
-      for(int i=0; i<4; i++){
-      good->cd(i*16+j+1);
+  //disegno distribuzione crosscorr
+  TCanvas *out=new TCanvas("out", "", 10, 10, 800, 800);
+  for(int j=0; j<16; j++){
+    for(int i=0; i<4; i++){
       hGOOD[i][j]->Draw("");
+      hGOOD[i][j]->SetLineColor(1);
+      hGOOD[i][j]->SetTitle(Form("Slot %i, Channel %i, BLACK = GOOD events, RED = BAD events",i,j));
+      hGOOD[i][j]->GetYaxis()->SetRangeUser(0, 50);
+      hBAD[i][j]->Draw("SAME");
+      hBAD[i][j]->SetLineColor(2);
+      if(i*16+j+1==1){
+	out->Print("out.pdf(","pdf");
+      }else if (i*16+j+1==64){
+	out->Print("out.pdf)","pdf");
+      } else {
+	out->Print("out.pdf","pdf");
       }
-      }
-            
-      TCanvas *bad=new TCanvas("bad", "", 10, 10, 1600, 1600);
-      bad->Divide(8,8);
-      for(int j=0; j<16; j++){
-      for(int i=0; i<4; i++){
-      bad->cd(i*16+j+1);
-      hBAD[i][j]->Draw("");
-      }
-      }*/
- 
-  TCanvas *good=new TCanvas("good", "", 10, 10, 1600, 1600);
-  good->Divide(4,4);
-  TCanvas *bad=new TCanvas("bad", "", 10, 10, 1600, 1600);
-  bad->Divide(4,4);
-  for(int i=0; i<4; i++){   
-    for(int j=0; j<16; j++){
-      good->cd(j+1);
-      hGOOD[i][j]->Draw("");
-      bad->cd(j+1);
-      hBAD[i][j]->Draw("");
     }
   }
   
-  return 0;
+  //disegno somma crosscorr 
+    TCanvas *c=new TCanvas("c", "", 10, 10, 800, 800);
+    x_corr_tot_good->Draw("");
+    x_corr_tot_good->SetTitle("Crosscorrelation distribution");
+    x_corr_tot_good->GetYaxis()->SetTitle("");
+    x_corr_tot_good->GetXaxis()->SetTitle("total crosscorrelation");
+    x_corr_tot_bad->SetLineColor(2);
+    x_corr_tot_bad->Draw("SAME");
+    
+    return 0;
 }
